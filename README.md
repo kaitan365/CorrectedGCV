@@ -4,7 +4,7 @@ This repository includes Python code that can reproduce all the simulation resul
 ## Description:
 Description of folders:
 
-1. **Gaussian** : Implement the numerical experiments on non-Gaussian models as described in Section 4 of the paper. 
+1. **Gaussian**: Implement the numerical experiments on non-Gaussian models as described in Section 4 of the paper. 
 The files inside this folder are described as follows. 
     * `run_ridge.py` : run ridge simulation, save results.
 
@@ -25,4 +25,4 @@ The files inside this folder are described as follows.
 
     * `run_simu_psi.py` : run ridge, Lasso, and Elastic Net simulations with different subsample aspect ratio psi.
 
-    * `plots.ipynb` : after executing the above scripts, generate figures using the saved results.
+    * `Plot.ipynb` : after executing the above scripts, generate figures using the saved results.
