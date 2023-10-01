@@ -4,6 +4,7 @@ from sklearn.linear_model import Ridge, Lasso, LogisticRegression, ElasticNet
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.neural_network import MLPRegressor
+from fixed_point_sol import *
 import scipy as sp
 from joblib import Parallel, delayed
 from functools import reduce
@@ -13,6 +14,63 @@ import warnings
 warnings.filterwarnings('ignore') 
 
 
+############################################################################
+#
+# Theoretical evaluation
+#
+############################################################################
+def comp_theoretic_risk(rho, sigma, lam, phi, psi, M, replace=True):
+    sigma2 = sigma**2
+    if psi == np.inf:
+        return np.full_like(M, rho**2, dtype=np.float32), np.zeros_like(M), np.full_like(M, rho**2 + sigma2, dtype=np.float32)
+    else:
+        v = v_phi_lam(psi,lam)
+        tc = rho**2 * tc_phi_lam(psi, lam, v)
+        
+        if np.any(M!=1):
+            tv = tv_phi_lam(phi, psi, lam, v) if replace else 0
+        else:
+            tv = 0
+        if np.any(M!=np.inf):
+            tv_s = tv_phi_lam(psi, psi, lam, v)
+        else:
+            tv_s = 0
+            
+        B = ((1 + tv_s) / M + (1 - 1/M) * (1 + tv)) * tc
+        V = (tv_s / M + (1 - 1/M) * tv) * sigma2
+        
+        return B, V, B+V+sigma2
+
+
+
+def comp_theoretic_risk_general(Sigma, beta0, sigma2, lam, phi, psi, M, 
+                                replace=True, v=None, tc=None, tv=None, tv_s=None):
+    if psi == np.inf:
+        rho2 = beta0.T @ Sigma @ beta0 #(1-rho_ar1**2)/(1-rho_ar1)**2/5
+        return np.full_like(M, rho2, dtype=np.float32), np.zeros_like(M), np.full_like(M, rho2 + sigma2, dtype=np.float32)
+    else:
+        if v is None:
+            v = v_general(psi, lam, Sigma)
+        if tc is None:
+            tc = tc_general(psi, lam, Sigma, beta0, v)
+        
+        if np.any(M!=1):
+            if tv is None:
+                tv = tv_general(phi, psi, lam, Sigma, v) if replace else 0
+        else:
+            tv = 0
+        if np.any(M!=np.inf):
+            if tv_s is None:
+                tv_s = tv_general(psi, psi, lam, Sigma, v)
+        else:
+            tv_s = 0
+            
+        B = ((1 + tv_s) / M + (1 - 1/M) * (1 + tv)) * tc
+        V = (tv_s / M + (1 - 1/M) * tv) * sigma2
+        
+        return B, V, B+V+sigma2
+    
+    
     
 ############################################################################
 #
@@ -193,12 +251,15 @@ def comp_empirical_risk(X, Y, X_test, Y_test, psi, method, param,
 ############################################################################
 def fit_predict_gcv(X, Y, X_test, method, param):
     k, p = X.shape
+    k_sqrt = np.sqrt(k)
     
     if method in ['ridge','lasso']:
         lam = np.maximum(param, 1e-8)
         
         if method=='ridge':
             regressor = PartialRidge(lam, p)
+            X = X/k_sqrt
+            Y = Y/k_sqrt
         else:
             regressor = PartialLasso(lam, p)
         regressor.fit(X, Y)
@@ -206,7 +267,7 @@ def fit_predict_gcv(X, Y, X_test, method, param):
         if method=='ridge':            
             svds = np.linalg.svd(X, compute_uv=False)
             evds = svds[:k]**2
-            dof = np.sum(evds/(evds + k * lam))
+            dof = np.sum(evds/(evds + lam))
         elif method=='lasso':
             dof = np.sum(regressor.coef_!=0)
             
@@ -309,9 +370,10 @@ def comp_empirical_gcv(
     cgcv = risk_val_full / deno_1 - C
     
     deno = (1 - dof[idM]/n_ids[idM])**2
-    gcv = risk_val_sub / deno    
+#     gcv = risk_val_sub / deno  
+    fgcv = risk_val_full / deno_1
     
-    return gcv, cgcv, risk_test
+    return fgcv, cgcv, risk_test
 
 
 

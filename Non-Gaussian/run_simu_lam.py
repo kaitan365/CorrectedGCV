@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import scipy as sp
 import scipy.linalg
+from fixed_point_sol import *
 from generate_data import *
 from compute_risk import *
 from tqdm import tqdm
