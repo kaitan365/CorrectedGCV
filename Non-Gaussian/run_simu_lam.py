@@ -18,7 +18,7 @@ def run(phi, psi, rho_ar1, sigma, i):
 
     np.random.seed(i)
     Sigma, beta0, X, Y, X_test, Y_test, rho2, sigma2 = generate_data(n, p, coef='eig-5', func='quad',
-        rho_ar1=rho_ar1, sigma=sigma, n_test=2000)
+        rho_ar1=rho_ar1, sigma=sigma, df=5 if data!='normal' else np.inf, n_test=2000)
 
     for lam in tqdm(lam_list):
         if method == 'elastic_net':
@@ -58,7 +58,10 @@ sigma = 1.
 p = 1200
 n_simu = 50
 
-path_result = 'result/ex1/'
+
+data_list = ['normal', 't5']
+data = data_list[int(sys.argv[3])]
+path_result = 'result/{}/'.format(data)
 os.makedirs(path_result, exist_ok=True)
 
 df_res_the = pd.DataFrame()

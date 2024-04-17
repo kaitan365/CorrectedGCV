@@ -17,8 +17,8 @@ def run(method, phi, rho_ar1, sigma, i):
     res_key = []
     
     np.random.seed(i)
-    Sigma, beta0, X, Y, X_test, Y_test, rho2, sigma2 = generate_data(n, p, coef='random', func='linear',
-        rho_ar1=rho_ar1, sigma=sigma, n_test=2000)
+    Sigma, beta0, X, Y, X_test, Y_test, rho2, sigma2 = generate_data(n, p, coef='eig-5', func='quad',
+        rho_ar1=rho_ar1, sigma=sigma, df=5 if data!='normal' else np.inf, n_test=2000)
 
     for psi in tqdm(psi_list):
         try:
@@ -49,12 +49,15 @@ def run(method, phi, rho_ar1, sigma, i):
 
 
 
-rho_ar1 = 0.
+rho_ar1 = 0.25
 sigma = 1.
 p = 1200
 n_simu = 50
 
-path_result = 'result/ex1/'
+
+data_list = ['normal', 't5']
+data = data_list[int(sys.argv[2])]
+path_result = 'result/{}/'.format(data)
 os.makedirs(path_result, exist_ok=True)
 
 df_res_the = pd.DataFrame()
