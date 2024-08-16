@@ -16,8 +16,7 @@ n = 2000
 p = 500
 M_max = 10
 sigma = 1
-rep = 100    # repeat simulation 100 times
-
+rep = 1000    # repeat simulation 100 times
 # %%
 def find_min_k(n):
     # find the minimal subsample size such that Pr(intersection of two subsamples is not empty) > 0.99
@@ -37,18 +36,6 @@ Sigma = np.diag(eigenvalues)
 Sigma_sq_root = np.diag(eigenvalues**0.5)
 Sigma_inverse = np.diag(eigenvalues**-1)
 
-# def sqrt_mat_sym(M):
-#     # square root for symmetric matrix
-#     s, v = la.eigh(M)
-#     result = v @ np.diag(s**0.5) @ v.T
-#     # assert np.isclose(M, v @ np.diag(s) @ v.T).all()
-#     # assert np.isclose(result @ result, M).all()
-#     # assert result.shape == M.shape
-#     return result
-
-# Sigma = la.toeplitz(0.5 ** np.arange(p))
-# Sigma_sq_root = sqrt_mat_sym(Sigma)
-
 s = p-100
 beta0 = np.zeros(p)
 rng = np.random.default_rng(42)
@@ -57,13 +44,23 @@ beta0[:s] = rng.normal(size=(s,))
 # generate coefficient that satisfies to signal-noise ratio
 snr = 1
 beta0 = beta0 * np.sqrt(snr * sigma**2 / (beta0 @ Sigma @ beta0) )
-print('snr:', (beta0 @ Sigma @ beta0) / sigma**2)
-
-# null_error = sigma**2 (1 + snr) = 2
+# print('snr:', (beta0 @ Sigma @ beta0) / sigma**2)
 
 # compute the range of lambda for lasso
 rng = np.random.default_rng(42)
-G = rng.normal(size=(n, p)) # G = X Sigma^{-1/2} with iid N(0,1) entries
+dist = 'Gaussian'
+
+def generate_G(rng, dist):
+    # generate the iid design matrix G
+    if dist == 'Gaussian':
+        G = 2 * rng.binomial(1, .5, size = (n, p)) - 1
+    if dist == 'Radermacher':
+        G = 2 * rng.binomial(1, .5, size = (n, p)) - 1 
+    if dist == 'Uniform':
+        G = rng.uniform(-1, 1, size = (n, p)) * np.sqrt(3)
+    return G
+
+G = generate_G(rng, dist)
 X = G @ Sigma_sq_root
 y = X @ beta0 + sigma * rng.normal(size=(n, ))
 
@@ -95,8 +92,8 @@ def one_run(seed, k=n//5, M=5, lam=.1):
 
     I_cum = [np.unique(subsamples[:m]) for m in range(1, M+1)] # cumulative subsamples
 
-
-    G = rng.normal(size=(n, p)) # G = X Sigma^{-1/2} with iid N(0,1) entries
+    G = generate_G(rng, dist)
+    rng.normal(size=(n, p)) # G = X Sigma^{-1/2} with iid N(0,1) entries
     X = G @ Sigma_sq_root
     y = X @ beta0 + sigma * rng.normal(size=(n, ))
     # shape (M, M), compute cardinalities
